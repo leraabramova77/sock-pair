@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Найди пару</title>
 <meta name="description" content="Игра: у носка потерялась пара. Запомни носок и раскрась второй точно таким же!">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧦</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 210 300'><path d='M48 18 H132 V168 C132 184 142 194 158 199 L176 205 C201 214 204 268 180 281 C162 291 118 290 88 285 C58 280 42 256 45 226 Z' fill='%23ff7a59' stroke='%234a3b32' stroke-width='12'/><rect x='48' y='18' width='84' height='40' fill='%23ffd166' stroke='%234a3b32' stroke-width='12'/></svg>">
 <style>
   :root {
     --bg: #fff6e9;
@@ -39,9 +39,11 @@
   @keyframes wiggle { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
   #menu p { margin: 0; max-width: 460px; font-size: 17px; line-height: 1.45; }
   .menu-socks { display: flex; gap: 10px; justify-content: center; margin: 6px 0; }
-  .menu-socks svg { width: 80px; height: 120px; }
-  .menu-socks svg:last-child { transform: scaleX(-1) rotate(8deg); }
-  .menu-socks svg:first-child { transform: rotate(-8deg); }
+  .menu-socks { align-items: flex-end; }
+  .menu-socks svg.sock { width: 80px; height: 120px; }
+  .menu-insp svg { display: block; }
+  .menu-socks > svg:last-child { transform: scaleX(-1) rotate(8deg); }
+  .menu-socks > svg:first-child { transform: rotate(-8deg); }
   .big {
     display: block; width: min(340px, 100%); padding: 14px 18px; border: 0; border-radius: 18px;
     font-size: 20px; font-weight: bold; background: var(--card);
@@ -76,16 +78,13 @@
   .slot .label { font-size: 14px; opacity: .7; margin-bottom: 4px; }
   .slot svg.sock { width: 100%; max-width: 230px; height: auto; touch-action: manipulation; }
   #mySock { cursor: pointer; }
-  .machine {
-    width: 64px; height: 64px; border-radius: 14px; background: #e9eef2; border: 3px solid #b7c3cc;
-    display: grid; place-items: center; position: absolute; top: 10px; right: 10px;
-  }
-  .machine::before {
-    content: ""; width: 38px; height: 38px; border-radius: 50%; border: 4px solid #9fb0bc;
-    background: radial-gradient(circle at 35% 35%, #d8f1ff, #7fb6d6);
-  }
-  .machine.spin::before { animation: spin .6s linear infinite; background: conic-gradient(#d8f1ff, #7fb6d6, #d8f1ff); }
+  .machine { width: 74px; position: absolute; top: 8px; right: 8px; }
+  .machine svg { width: 100%; height: auto; display: block; }
+  .drum { transform-box: fill-box; transform-origin: center; }
+  .machine.spin .drum { animation: spin .5s linear infinite; }
+  .machine.spin svg { animation: rumble .12s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes rumble { 50% { transform: translate(1px, -1px); } }
   .drop-in { animation: dropIn .7s cubic-bezier(.3,1.4,.5,1); }
   @keyframes dropIn { from { transform: translate(30px, -60px) scale(.3) rotate(40deg); opacity: 0; } }
   .fly-away { animation: flyAway .6s ease-in forwards; }
@@ -94,7 +93,7 @@
     position: absolute; inset: 60px 14px 14px; display: none; place-items: center; text-align: center;
     font-size: 18px; line-height: 1.4; border: 3px dashed rgba(0,0,0,.15); border-radius: 18px;
   }
-  .secret b { font-size: 46px; display: block; }
+  .secret svg { display: inline-block; }
   .slot.hidden .secret { display: grid; }
   .slot.hidden svg.sock { visibility: hidden; }
 
@@ -137,14 +136,14 @@
   .result .msg { font-size: 20px; margin: 8px 0 12px; }
   .pair { display: flex; justify-content: center; align-items: flex-end; gap: 0; height: 170px; position: relative; }
   .pair svg { width: 110px; height: 165px; }
-  .pair .pin { position: absolute; top: 4px; font-size: 34px; }
+  .pair .pin { position: absolute; top: -6px; left: 50%; transform: translateX(-50%); }
   .pair.win svg:first-child { animation: hugL .6s ease forwards; }
   .pair.win svg:last-child { animation: hugR .6s ease forwards; }
   @keyframes hugL { to { transform: translateX(18px) rotate(-4deg); } }
   @keyframes hugR { to { transform: translateX(-18px) rotate(4deg); } }
   .pair.lose svg:last-child { animation: crawl 1.4s ease-in .4s forwards; }
   @keyframes crawl { 50% { transform: translate(20px, 10px) rotate(25deg); } 100% { transform: translate(80px, 60px) rotate(80deg) scale(.5); opacity: 0; } }
-  .sofa { font-size: 40px; position: absolute; right: 0; bottom: -6px; }
+  .sofa { position: absolute; right: 0; bottom: -6px; }
 
   /* шкаф */
   #closet h2 { margin: 8px 0; }
@@ -192,55 +191,62 @@
   }
   .apt {
     border: 0; border-radius: 14px; background: #fff; padding: 10px 6px; display: flex; flex-direction: column;
-    align-items: center; gap: 2px; box-shadow: 0 4px 0 rgba(0,0,0,.18); min-height: 130px;
+    align-items: center; gap: 2px; box-shadow: 0 4px 0 rgba(0,0,0,.18);
   }
   .apt:active { transform: translateY(3px); }
   .apt .num { font-size: 13px; opacity: .6; }
-  .apt .who { font-size: 40px; line-height: 1.1; }
+  .apt svg { width: 100%; max-width: 170px; height: auto; display: block; }
   .apt .name { font-weight: bold; font-size: 15px; }
   .apt .st { font-size: 13px; }
   .apt.finished { background: #e2f6e5; }
-  .entrance { width: 92%; background: var(--house); text-align: center; font-size: 40px; padding-bottom: 4px; border-radius: 0 0 8px 8px; }
+  .entrance { width: 92%; background: var(--house); text-align: center; padding-top: 6px; border-radius: 0 0 8px 8px; line-height: 0; }
   .diff { width: min(460px, 100%); background: #fff; border-radius: 16px; padding: 12px 16px; margin-top: 12px; line-height: 1.6; font-size: 15px; }
 
   .resident { display: flex; gap: 12px; align-items: center; width: min(760px, 100%); margin-top: 12px; }
-  .resident .who { font-size: 64px; }
+  .resident .who { flex: 0 0 150px; }
+  .resident .who svg { display: block; }
   .resident .say { background: #fff; border-radius: 18px; padding: 12px 16px; position: relative; line-height: 1.45; flex: 1; }
   .resident .say::before { content: ""; position: absolute; left: -10px; top: 24px; border: 10px solid transparent; border-right-color: #fff; border-left: 0; }
-  .room-grid { width: min(760px, 100%); display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 8px; }
+  .room-grid { width: min(760px, 100%); display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 8px; }
   .room-tile {
-    border: 0; border-radius: 18px; padding: 16px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px;
-    font-size: 17px; font-weight: bold; box-shadow: 0 4px 0 rgba(0,0,0,.15);
+    border: 0; border-radius: 18px; padding: 8px 8px 12px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    font-size: 17px; font-weight: bold; box-shadow: 0 4px 0 rgba(0,0,0,.15); background: #fff;
   }
-  .room-tile .ic { font-size: 46px; }
+  .room-tile .thumb { width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; line-height: 0; }
+  .room-tile .thumb svg { width: 100%; height: 100%; }
   .room-tile .st { font-size: 14px; font-weight: normal; }
   .room-tile.finished { filter: saturate(.4); opacity: .8; }
 
   .scene {
-    width: min(760px, 100%); min-height: 380px; border-radius: 22px; padding: 24px 12px; margin-top: 8px;
-    display: flex; flex-wrap: wrap; gap: 14px 6px; justify-content: space-around; align-content: space-around;
-    box-shadow: inset 0 0 0 6px rgba(0,0,0,.08);
+    width: min(960px, 100%); aspect-ratio: 16 / 9; border-radius: 22px; margin-top: 8px; overflow: hidden;
+    position: relative; box-shadow: 0 0 0 6px #fff, 0 10px 30px rgba(0,0,0,.15); line-height: 0;
   }
-  .thing {
-    font-size: 64px; border: 0; background: rgba(255,255,255,.35); border-radius: 22px; width: 110px; height: 110px;
-    position: relative; animation: pop .4s ease backwards; transition: transform .2s;
-  }
-  .thing:hover { transform: scale(1.06); }
-  .thing.look { animation: shake .4s ease; }
-  @keyframes shake { 25% { transform: rotate(-12deg); } 75% { transform: rotate(12deg); } }
-  .thing.empty { opacity: .35; filter: grayscale(1); }
-  .found-sock { position: absolute; left: 50%; top: 0; font-size: 52px; animation: popUp 1s ease forwards; }
-  @keyframes popUp { from { transform: translate(-50%, 20px) scale(.3); } to { transform: translate(-50%, -60px) scale(1.3) rotate(-15deg); } }
+  .scene svg.room-svg { width: 100%; height: 100%; display: block; }
+  .spot { cursor: pointer; }
+  .spot .inner { transition: filter .15s; transform-box: fill-box; transform-origin: 50% 100%; }
+  .spot:hover .inner { filter: drop-shadow(0 0 5px #fff) drop-shadow(0 0 8px #ffb300); }
+  .spot.look .inner { animation: shake .45s ease; }
+  @keyframes shake { 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
+  .spot.empty { cursor: default; }
+  .spot.empty .inner { filter: grayscale(.7) opacity(.55); }
+  .found-sock { position: absolute; width: 70px; margin-left: -35px; pointer-events: none; animation: popUp 1.2s cubic-bezier(.3,1.4,.5,1) forwards; }
+  .found-sock svg { width: 100%; height: auto; }
+  @keyframes popUp { from { transform: translateY(30px) scale(.2); opacity: 0; } to { transform: translateY(-90px) scale(1.15) rotate(-14deg); opacity: 1; } }
+  .street-head { display: flex; align-items: center; gap: 14px; width: min(760px, 100%); justify-content: center; }
+  .street-head .qtitle, .street-head .qsub { text-align: left; }
 
   @media (max-width: 520px) {
-    .thing { width: 86px; height: 86px; font-size: 48px; }
-    .resident .who { font-size: 48px; }
+    .resident .who { flex-basis: 96px; }
+    .resident .who svg { width: 96px; height: auto; }
+    .street-head #streetInsp svg { width: 80px; height: auto; }
+    .found-sock { width: 44px; margin-left: -22px; }
+    .machine { width: 46px; top: 4px; right: 4px; }
     .house-btn { flex-basis: 130px; }
     .slot { min-height: 230px; padding: 6px; }
-    .machine { width: 40px; height: 40px; top: 4px; right: 4px; }
+
     #targetSlot .label { padding-right: 40px; font-size: 12px; }
     .slot .label { font-size: 12px; }
-    .machine::before { width: 24px; height: 24px; border-width: 3px; }
+
     .secret { inset: 52px 6px 6px; font-size: 15px; }
     .color { width: 34px; height: 34px; }
     .tool { padding: 4px 8px; font-size: 14px; }
@@ -251,15 +257,15 @@
 
 <!-- ======== МЕНЮ ======== -->
 <section class="screen on" id="menu">
-  <h1><span>🧦</span> Найди пару</h1>
+  <h1>Найди пару</h1>
   <div class="menu-socks" id="menuSocks"></div>
   <p>Из стиральной машинки выпал носок, а его пара потерялась! Запомни носок и раскрась второй <b>точно таким же</b>.</p>
-  <button class="big quest" id="openQuest">🕵️ Квест: Инспектор носков<small>Ходи по домам и квартирам, ищи носки</small></button>
-  <button class="big memory" data-mode="memory">🧠 По памяти<small>Носок покажется и спрячется</small></button>
-  <button class="big speed" data-mode="speed">⚡ На скорость<small>Носок видно, но время бежит</small></button>
+  <button class="big quest" id="openQuest">Квест: Инспектор носков<small>Ходи по домам и квартирам, ищи носки</small></button>
+  <button class="big memory" data-mode="memory">По памяти<small>Носок покажется и спрячется</small></button>
+  <button class="big speed" data-mode="speed">На скорость<small>Носок видно, но время бежит</small></button>
   <div class="row">
-    <button class="big" id="openCloset">👕 Шкаф <span id="closetCount">0</span></button>
-    <button class="big" id="openSofa">🛋 Под диваном <span id="sofaCount">0</span></button>
+    <button class="big" id="openCloset">Шкаф <span id="closetCount">0</span></button>
+    <button class="big" id="openSofa">Под диваном <span id="sofaCount">0</span></button>
   </div>
   <div class="record" id="recordText"></div>
 </section>
@@ -269,7 +275,7 @@
   <div class="topbar">
     <button class="back" id="toMenu">← Меню</button>
     <span class="pill" id="levelText">Носок №1</span>
-    <span class="pill" id="streakText">🔥 0</span>
+    <span class="pill" id="streakText">Серия: 0</span>
   </div>
   <div class="hint" id="hint"></div>
   <div class="timer"><i id="timerBar"></i></div>
@@ -279,7 +285,7 @@
       <div class="label">Потерянный носок</div>
       <div class="machine" id="machine"></div>
       <div id="targetBox"></div>
-      <div class="secret"><div><b>🫧</b>Носок спрятался в машинку.<br>Вспоминай, какой он!</div></div>
+      <div class="secret"><div><span id="bubbles"></span><br>Носок спрятался в машинку.<br>Вспоминай, какой он!</div></div>
     </div>
     <div class="slot">
       <div class="label">Твой носок</div>
@@ -292,15 +298,15 @@
     <div class="tool-row" id="palette"></div>
   </div>
   <div class="actions">
-    <button class="big" id="clearBtn">🧼 Очистить</button>
-    <button class="big done" id="doneBtn">✅ Готово!</button>
+    <button class="big" id="clearBtn">Очистить</button>
+    <button class="big done" id="doneBtn">Готово!</button>
   </div>
 </section>
 
 <!-- ======== ШКАФ ======== -->
 <section class="screen" id="closet">
   <div class="topbar"><button class="back" id="closetBack">← Меню</button><span class="pill" id="closetTitle"></span><span></span></div>
-  <h2>👕 Шкаф с парами</h2>
+  <h2>Шкаф с парами</h2>
   <div class="shelf" id="shelf"></div>
 </section>
 
@@ -311,8 +317,8 @@
     <span class="pill" id="rankText"></span>
     <span class="pill" id="starsText"></span>
   </div>
-  <h2 class="qtitle">🏘 Носочная улица</h2>
-  <p class="qsub">Ты — инспектор поиска носков. Проверь каждый дом: в нём 4 квартиры, и везде пропали носки!</p>
+  <div class="street-head"><div id="streetInsp"></div><div><h2 class="qtitle">Носочная улица</h2>
+  <p class="qsub">Ты — инспектор поиска носков. Проверь каждый дом: в нём 4 квартиры, и везде пропали носки!</p></div></div>
   <div class="banner" id="streetMsg"></div>
   <div class="street"><div class="street-row" id="streetRow"></div><div class="road"></div></div>
   <button class="link" id="questReset">Начать квест заново</button>
@@ -325,7 +331,7 @@
   <div class="house-body" id="houseBody">
     <div class="big-roof"></div>
     <div class="apt-grid" id="aptGrid"></div>
-    <div class="entrance">🚪</div>
+    <div class="entrance" id="entrance"></div>
   </div>
   <div class="diff" id="houseDiff"></div>
 </section>
@@ -351,10 +357,11 @@
     <div class="pct" id="pct">0%</div>
     <div class="msg" id="msg"></div>
     <div class="pair" id="pair"></div>
-    <div class="actions"><button class="big done" id="nextBtn">Дальше ➜</button></div>
+    <div class="actions"><button class="big done" id="nextBtn">Дальше →</button></div>
   </div>
 </div>
 
+<script src="art.js"></script>
 <script>
 /* ================== Краски и наклейки ================== */
 const COLORS = [
@@ -533,11 +540,14 @@ function updateMenu() {
   $("sofaCount").textContent = sofa.length;
   $("openSofa").disabled = !sofa.length;
   $("openSofa").style.opacity = sofa.length ? 1 : .5;
-  $("recordText").textContent = record ? `🏆 Рекорд: ${record} ${plural(record, "пара", "пары", "пар")} подряд` : "";
+  $("recordText").textContent = record ? `Рекорд: ${record} ${plural(record, "пара", "пары", "пар")} подряд` : "";
   const box = $("menuSocks");
   box.innerHTML = "";
   const d = makeDesign(5);
-  box.append(drawSock(d), drawSock(d));
+  const insp = document.createElement("div");
+  insp.className = "menu-insp";
+  insp.innerHTML = ART.portrait("inspector", "happy", 130);
+  box.append(drawSock(d), insp, drawSock(d));
 }
 function plural(n, one, few, many) {
   const a = n % 10, b = n % 100;
@@ -548,6 +558,7 @@ function plural(n, one, few, many) {
 
 function startGame(m, fromSofa) {
   mode = m; rescue = !!fromSofa; level = 1; streak = 0; quest.active = false;
+  $("toMenu").textContent = "← Меню";
   show("game");
   nextSock();
 }
@@ -566,8 +577,8 @@ function runTimer(seconds, onEnd) {
     const left = Math.max(0, timerEnd - Date.now());
     bar.style.width = (100 * left / timerTotal) + "%";
     bar.style.background = left < 4000 ? "var(--bad)" : "var(--accent)";
-    if (phase === "show") $("hint").textContent = `👀 Запоминай! ${Math.ceil(left / 1000)}`;
-    if (phase === "paint") $("hint").textContent = `⚡ Раскрашивай! Осталось ${Math.ceil(left / 1000)} сек`;
+    if (phase === "show") $("hint").textContent = `Запоминай! ${Math.ceil(left / 1000)}`;
+    if (phase === "paint") $("hint").textContent = `Раскрашивай! Осталось ${Math.ceil(left / 1000)} сек`;
     if (left <= 0) { stopTimers(); onEnd(); }
   };
   tick();
@@ -587,8 +598,8 @@ function nextSock() {
   cfg = mode === "memory"
     ? { show: Math.max(3, 7 - Math.floor(level / 2)) + Math.min(target.stickers.length, 3), paint: 0 }
     : { show: 0, paint: Math.max(18, 40 - level * 2) + target.stickers.length * 4 };
-  $("levelText").textContent = rescue ? `🛋 Спасаем носок` : `Носок №${level}`;
-  $("streakText").textContent = `🔥 ${streak}`;
+  $("levelText").textContent = rescue ? `Спасаем носок из-под дивана` : `Носок №${level}`;
+  $("streakText").textContent = `Серия: ${streak}`;
   startRound();
 }
 
@@ -601,7 +612,7 @@ function startRound() {
   drawMine();
   setToolsOn(false);
   phase = "drop";
-  $("hint").textContent = "🌀 Машинка стирает…";
+  $("hint").textContent = "Машинка стирает…";
   $("timerBar").style.width = "100%";
   $("machine").classList.add("spin");
   phaseTimeout = setTimeout(() => {
@@ -618,7 +629,7 @@ function startPaint() {
   else {
     $("timerBar").style.width = "0%";
     $("hint").textContent = $("targetSlot").classList.contains("hidden")
-      ? "🎨 Вспоминай и раскрашивай!" : "🎨 Раскрась свой носок так же!";
+      ? "Вспоминай и раскрашивай!" : "Раскрась свой носок так же!";
   }
 }
 
@@ -682,7 +693,7 @@ function onPaint(e) {
   if (!hit.dataset.zone && si === undefined) return; // мимо носка
   const p = svgPoint(svg, e);
   const x = Math.round(p.x), y = Math.round(p.y);
-  if (mine.stickers.length >= 8) { $("hint").textContent = "Хватит наклеек! Можно стереть лишние 🧽"; return; }
+  if (mine.stickers.length >= 8) { $("hint").textContent = "Хватит наклеек! Можно стереть лишние."; return; }
   mine.stickers.push({ type: tool, x, y, color });
   drawMine();
 }
@@ -690,19 +701,19 @@ function onPaint(e) {
 // инструменты
 function buildTools() {
   const row = $("toolRow");
-  const tools = [["fill", "🪣 Заливка"], ...Object.keys(STICKERS).map((k) => [k, ""]), ["erase", "🧽 Стёрка"]];
+  const tools = [["fill", ART.icons.bucket() + " Заливка"], ...Object.keys(STICKERS).map((k) => [k, ""]), ["erase", ART.icons.eraser() + " Стёрка"]];
   for (const [key, label] of tools) {
     const b = document.createElement("button");
     b.className = "tool" + (key === tool ? " on" : "");
     b.dataset.tool = key;
-    b.title = STICKERS[key] ? "Наклейка: " + STICKERS[key].name : label;
+    b.title = STICKERS[key] ? "Наклейка: " + STICKERS[key].name : (key === "fill" ? "Заливка" : "Стёрка");
     if (STICKERS[key]) {
       const s = document.createElementNS(NS, "svg");
       s.setAttribute("viewBox", "-14 -14 28 28");
       el(s, "path", { d: STICKERS[key].d, fill: "currentColor", stroke: "rgba(0,0,0,.3)", "stroke-width": "1.2" });
       b.appendChild(s);
     } else {
-      b.textContent = label;
+      b.innerHTML = label;
     }
     b.onclick = () => { tool = key; row.querySelectorAll(".tool").forEach((x) => x.classList.toggle("on", x === b)); };
     row.appendChild(b);
@@ -733,7 +744,7 @@ function finish() {
   drawTarget(false);
   const pct = compare(target, mine);
   const win = pct >= PASS;
-  $("hint").textContent = "🔍 Сравниваем носки…";
+  $("hint").textContent = "Сравниваем носки…";
   $("timerBar").style.width = "0%";
   $("pct").textContent = pct + "%";
   $("pct").style.color = win ? "var(--good)" : "var(--bad)";
@@ -746,7 +757,7 @@ function finish() {
 
   if (win) {
     const pin = document.createElement("div");
-    pin.className = "pin"; pin.textContent = "📎";
+    pin.className = "pin"; pin.innerHTML = ART.icons.pin();
     pair.appendChild(pin);
     closet.push({ a: target, b: mine });
     if (closet.length > 80) closet.shift();
@@ -754,17 +765,17 @@ function finish() {
     streak++;
     if (!rescue) level++;
     if (streak > record) record = streak;
-    $("msg").textContent = pct === 100 ? "Идеальная пара! 🤩 В шкаф!" : pct >= 90 ? "Почти близнецы! 👕 В шкаф!" : "Похожи! Пара отправляется в шкаф 👕";
+    $("msg").textContent = pct === 100 ? "Идеальная пара! Отправляется в шкаф!" : pct >= 90 ? "Почти близнецы! В шкаф!" : "Похожи! Пара отправляется в шкаф.";
   } else {
     const sofaEl = document.createElement("div");
-    sofaEl.className = "sofa"; sofaEl.textContent = "🛋";
+    sofaEl.className = "sofa"; sofaEl.innerHTML = ART.icons.sofa();
     pair.appendChild(sofaEl);
     if (!rescue) { sofa.push(target); if (sofa.length > 30) sofa.shift(); }
     streak = 0;
-    $("msg").textContent = rescue ? "Не получилось… Носок пока остался под диваном 🛋" : "Не похоже… Носок обиделся и уполз под диван 🛋";
+    $("msg").textContent = rescue ? "Не получилось… Носок пока остался под диваном." : "Не похоже… Носок обиделся и уполз под диван.";
   }
   save("socks-closet", closet); save("socks-sofa", sofa); save("socks-record", record);
-  $("nextBtn").textContent = rescue && !sofa.length ? "Все спасены! 🎉" : "Дальше ➜";
+  $("nextBtn").textContent = rescue && !sofa.length ? "Все спасены!" : "Дальше →";
   $("result").classList.add("on");
 }
 
@@ -780,7 +791,7 @@ function openCloset() {
   const shelf = $("shelf");
   shelf.innerHTML = "";
   $("closetTitle").textContent = `${closet.length} ${plural(closet.length, "пара", "пары", "пар")}`;
-  if (!closet.length) shelf.innerHTML = '<div class="empty">Тут пока пусто. Найди первую пару! 🧦</div>';
+  if (!closet.length) shelf.innerHTML = '<div class="empty">Тут пока пусто. Найди первую пару!</div>';
   for (const p of closet.slice().reverse()) {
     const d = document.createElement("div");
     d.className = "p";
@@ -812,30 +823,19 @@ $("nextBtn").onclick = () => {
    КВЕСТ «ИНСПЕКТОР НОСКОВ»
    Улица → дом (4 квартиры) → квартира (комнаты) → комната (ищем носок)
    → дорисовываем пару. Каждый следующий дом сложнее.
+   Все рисунки — в art.js.
    ====================================================================== */
-const RESIDENTS = [
-  ["👵", "Бабушка Валя"], ["👴", "Дедушка Асан"], ["👩", "Тётя Оля"], ["👨", "Дядя Миша"],
-  ["👦", "Тимур"], ["👧", "Айгерим"], ["🧑‍🍳", "Повар Бека"], ["👩‍🎤", "Певица Жанна"],
-  ["🧙", "Волшебник Гоша"], ["👮", "Полицейский Данияр"], ["🧑‍🚀", "Космонавт Нурлан"],
-  ["👩‍🔬", "Учёная Алия"], ["🤴", "Принц Эрик"], ["🧛", "Граф Носкула"], ["🐶", "Пёс Бублик"],
-  ["🧑‍🎨", "Художница Мира"],
-];
-const ROOM_TYPES = {
-  hall:    { name: "Прихожая", icon: "🚪", bg: "#e8d8c3", items: [["👟", "в обувницу"], ["🧥", "на вешалку"], ["☂️", "в подставку для зонтов"], ["🧹", "в угол за веник"], ["📦", "в коробку"]] },
-  bed:     { name: "Спальня",  icon: "🛏", bg: "#d9d4f0", items: [["🛏", "под кровать"], ["🗄", "в комод"], ["🪟", "за штору"], ["🧸", "под мишку"], ["📚", "за книги"]] },
-  kitchen: { name: "Кухня",    icon: "🍳", bg: "#d6efe0", items: [["🧊", "в холодильник"], ["🍲", "в кастрюлю"], ["🗑", "в мусорное ведро"], ["🪑", "под стул"], ["🍞", "в хлебницу"]] },
-  bath:    { name: "Ванная",   icon: "🛁", bg: "#cfe8f7", items: [["🛁", "в ванну"], ["🧺", "в корзину для белья"], ["🧴", "на полку"], ["🧻", "за рулоны"], ["🌀", "в стиральную машину"]] },
-  living:  { name: "Гостиная", icon: "🛋", bg: "#f6dccb", items: [["🛋", "под диван"], ["📺", "за телевизор"], ["🪴", "в горшок с цветком"], ["🐈", "под кота"], ["🎹", "в пианино"]] },
-  kids:    { name: "Детская",  icon: "🧸", bg: "#fbe3ef", items: [["🧸", "в кучу игрушек"], ["🎒", "в рюкзак"], ["🪀", "в ящик с игрушками"], ["🛝", "под горку"], ["🖍", "на стол с карандашами"]] },
-};
-const EXTRA_ITEMS = [["🟫", "под ковёр"], ["🗃", "в старый ящик"], ["🎁", "в подарочную коробку"]];
+const RESIDENTS = Object.keys(ART.PEOPLE);
+const ROOM_TYPES = ART.ROOMS;
 const JOKES = [
-  "Тут только пыль 🌫", "Нашлась конфета 🍬, но не носок", "Кот смотрит недовольно 😾",
-  "Тут живёт паук 🕷. Носка нет!", "Пусто…", "Нашлась монетка 🪙. Носка нет.",
-  "Ой, старый бутерброд 🥪", "Тут спит мышка 🐭. Тсс!", "Нашлась пуговица 🔘. Не то!",
+  "Тут только пыль.", "Нашлась конфета, но не носок.", "Кот смотрит недовольно.",
+  "Тут живёт паук. Носка нет!", "Пусто…", "Нашлась монетка. Носка нет.",
+  "Ой, старый бутерброд!", "Тут спит мышка. Тсс!", "Нашлась пуговица. Не то!",
+  "Только фантик от конфеты.", "Тут потерянная варежка. Не то!",
 ];
 const RANKS = ["Стажёр", "Младший инспектор", "Инспектор", "Старший инспектор", "Детектив", "Главный носочный детектив"];
 const HOUSE_COLORS = ["#f4a259", "#5b8e7d", "#bc4b51", "#8cb369", "#6a8eae", "#b48ead", "#e9c46a", "#2a9d8f"];
+const I = ART.icons;
 
 const rankOf = (h) => RANKS[Math.min(h - 1, RANKS.length - 1)];
 
@@ -851,11 +851,11 @@ function houseCfg(d, aptIdx = 0) {
 }
 function diffLines(d) {
   const c = houseCfg(d);
-  const lines = [`🏠 Комнат в квартире: ${c.rooms}`, `🔎 Мест для поиска в комнате: ${c.items}`];
-  lines.push(c.show ? `🫧 Носок прячется через ${c.show} сек — запоминай!` : "👀 Носок видно всё время");
-  if (c.paint) lines.push(`⏱ Время на раскраску: ${c.paint} сек`);
-  if (d >= 2) lines.push("🎨 Полоски на носках");
-  if (d >= 2) lines.push(d === 2 ? "⭐ В квартирах 3 и 4 — наклейки" : `⭐ Наклеек на носке: до ${Math.min(1 + Math.floor((houseCfg(d, 3).level - 4) / 2), 5)}`);
+  const lines = [`Комнат в квартире: ${c.rooms}`, `Мест для поиска в комнате: ${c.items}`];
+  lines.push(c.show ? `Носок прячется через ${c.show} сек — запоминай!` : "Носок видно всё время");
+  if (c.paint) lines.push(`Время на раскраску: ${c.paint} сек`);
+  if (d >= 2) lines.push("Полоски на носках");
+  if (d >= 2) lines.push(d === 2 ? "В квартирах 3 и 4 — наклейки" : `Наклеек на носке: до ${Math.min(1 + Math.floor((houseCfg(d, 3).level - 4) / 2), 5)}`);
   return lines;
 }
 
@@ -871,6 +871,8 @@ function newHouse(n, history) {
 }
 let Q = load("socks-quest", null);
 if (!Q || !Array.isArray(Q.apts) || Q.apts.length !== 4) Q = newHouse(1, []);
+// старые сохранения: жилец был записан как [смайлик, имя]
+Q.apts.forEach((a) => { if (Array.isArray(a.who)) a.who = a.who[1]; if (!ART.PEOPLE[a.who]) a.who = RESIDENTS[0]; });
 const saveQ = () => save("socks-quest", Q);
 const quest = { active: false, apt: 0, room: 0 };
 const totalStars = () => Q.history.reduce((s, x) => s + x, 0) + Q.apts.reduce((s, a) => s + a.stars, 0);
@@ -884,8 +886,9 @@ function banner(id, html) {
 /* ---------- улица ---------- */
 function openStreet(msg) {
   quest.active = false;
-  $("rankText").textContent = `🕵️ ${rankOf(Q.house)}`;
-  $("starsText").textContent = `⭐ ${totalStars()}`;
+  $("rankText").textContent = `Звание: ${rankOf(Q.house)}`;
+  $("starsText").innerHTML = `${I.star(20)} ${totalStars()}`;
+  $("streetInsp").innerHTML = ART.portrait("inspector", "happy", 110);
   const street = $("streetRow");
   street.innerHTML = "";
   const last = Q.house + 2;
@@ -902,11 +905,11 @@ function openStreet(msg) {
         <div class="door"></div>
       </div>
       <div class="hlabel">Дом №${n}</div>
-      <div class="hstate">${done ? `✅ ${"⭐".repeat(Math.round((Q.history[n - 1] || 4) / 4))}` : current ? "👉 Сюда!" : "🔒"}</div>`;
+      <div class="hstate">${done ? `${I.check(18)} ${I.stars(Math.max(1, Math.round((Q.history[n - 1] || 4) / 4)), 3, 16)}` : current ? "Сюда!" : I.lock(18)}</div>`;
     h.onclick = () => {
       if (current) openHouse();
-      else if (done) banner("streetMsg", `Дом №${n} уже проверен. Все носки нашлись! ✅`);
-      else banner("streetMsg", `🔒 Дом №${n} пока закрыт. Сначала проверь дом №${Q.house}.`);
+      else if (done) banner("streetMsg", `Дом №${n} уже проверен. Все носки нашлись!`);
+      else banner("streetMsg", `Дом №${n} пока закрыт. Сначала проверь дом №${Q.house}.`);
     };
     street.appendChild(h);
   }
@@ -930,9 +933,9 @@ function openHouse(msg) {
     const left = a.rooms.filter((r) => !r.done).length;
     const b = document.createElement("button");
     b.className = "apt" + (a.stars ? " finished" : "");
-    b.innerHTML = `<span class="num">Кв. ${i + 1}</span><span class="who">${a.who[0]}</span>
-      <span class="name">${a.who[1]}</span>
-      <span class="st">${a.stars ? "⭐".repeat(a.stars) : `🧦 потерялось: ${left}`}</span>`;
+    b.innerHTML = `<span class="num">Кв. ${i + 1}</span>${ART.windowBust(a.who, !!a.stars)}
+      <span class="name">${a.who}</span>
+      <span class="st">${a.stars ? I.stars(a.stars) : `Потерялось носков: ${left}`}</span>`;
     b.onclick = () => openApt(i);
     grid.appendChild(b);
   });
@@ -945,21 +948,22 @@ function openApt(i, msg) {
   quest.active = false;
   quest.apt = i;
   const a = Q.apts[i];
+  const c = houseCfg(Q.house, i);
   $("aptTitle").textContent = `Дом №${Q.house} · Кв. ${i + 1}`;
-  $("aptWho").textContent = a.who[0];
+  $("aptWho").innerHTML = ART.portrait(a.who, a.stars ? "happy" : "worried", 150);
   const left = a.rooms.filter((r) => !r.done);
   $("aptSay").innerHTML = a.stars
-    ? `<b>${a.who[1]}:</b> Спасибо, инспектор! Все мои носки снова в парах! 🥳`
-    : `<b>${a.who[1]}:</b> Инспектор, помогите! Носки пропали в комнатах: ${left.map((r) => ROOM_TYPES[r.type].name.toLowerCase()).join(", ")}. Найдите их и дорисуйте пары!`;
+    ? `<b>${a.who}:</b> Спасибо, инспектор! Все мои носки снова в парах!`
+    : `<b>${a.who}:</b> Инспектор, помогите! Носки пропали в комнатах: ${left.map((r) => ROOM_TYPES[r.type].name.toLowerCase()).join(", ")}. Найдите их и дорисуйте пары!`;
   const grid = $("roomGrid");
   grid.innerHTML = "";
   a.rooms.forEach((r, ri) => {
     const t = ROOM_TYPES[r.type];
     const b = document.createElement("button");
     b.className = "room-tile" + (r.done ? " finished" : "");
-    b.style.background = t.bg;
-    b.innerHTML = `<span class="ic">${t.icon}</span><span>${t.name}</span><span class="st">${r.done ? `✅ ${r.pct}%` : "🔎 искать"}</span>`;
-    b.onclick = () => { if (r.done) banner("aptMsg", `В комнате «${t.name}» носок уже найден ✅`); else openRoom(ri); };
+    b.innerHTML = `<div class="thumb">${ART.room(r.type, c.items, { thumb: true }).svg}</div>
+      <span class="rn">${t.name}</span><span class="st">${r.done ? `${I.check(18)} найден, ${r.pct}%` : "Искать носок"}</span>`;
+    b.onclick = () => { if (r.done) banner("aptMsg", `В комнате «${t.name}» носок уже найден.`); else openRoom(ri); };
     grid.appendChild(b);
   });
   banner("aptMsg", msg || "");
@@ -973,54 +977,63 @@ function openRoom(ri) {
   const r = a.rooms[ri];
   const t = ROOM_TYPES[r.type];
   const c = houseCfg(Q.house, quest.apt);
-  $("roomTitle").textContent = `${t.icon} ${t.name}`;
-  $("roomHint").textContent = "Где спрятался носок? Нажимай, чтобы заглянуть!";
+  $("roomTitle").textContent = t.name;
+  $("roomHint").textContent = "Где спрятался носок? Нажимай на вещи, чтобы заглянуть!";
   const scene = $("scene");
-  scene.style.background = `linear-gradient(${t.bg} 0 62%, #c9a67c 62% 100%)`;
-  scene.innerHTML = "";
-  const items = t.items.concat(EXTRA_ITEMS).slice(0, c.items).sort(() => Math.random() - 0.5);
-  const sockAt = rnd(items.length);
+  const { svg, spots } = ART.room(r.type, c.items);
+  scene.innerHTML = svg;
+  const sockAt = spots[rnd(spots.length)].i;
   const jokes = JOKES.slice().sort(() => Math.random() - 0.5);
   let tries = 0, found = false;
-  items.forEach(([emo, where], k) => {
-    const b = document.createElement("button");
-    b.className = "thing";
-    b.textContent = emo;
-    b.title = "Заглянуть " + where;
-    b.style.animationDelay = (k * 0.07) + "s";
-    b.onclick = () => {
-      if (found || b.classList.contains("empty")) return;
+  scene.querySelectorAll(".spot").forEach((g) => {
+    const k = +g.dataset.i;
+    const where = spots.find((s) => s.i === k).where;
+    const title = document.createElementNS(NS, "title");
+    title.textContent = "Заглянуть " + where;
+    g.appendChild(title);
+    g.addEventListener("click", () => {
+      if (found || g.classList.contains("empty")) return;
       tries++;
-      b.classList.add("look");
+      g.classList.remove("look");
+      void g.getBoundingClientRect();
+      g.classList.add("look");
       if (k === sockAt) {
         found = true;
-        const s = document.createElement("span");
-        s.className = "found-sock";
-        s.textContent = "🧦";
-        b.appendChild(s);
-        $("roomHint").textContent = tries === 1 ? "С первой попытки! Вот он! 🎉" : `Нашёлся! Носок спрятался ${where} 🎉`;
-        setTimeout(() => startQuestPaint(), 1100);
+        target = makeDesign(c.level);
+        popSock(scene, g);
+        $("roomHint").textContent = tries === 1 ? "С первой попытки! Вот он!" : `Нашёлся! Носок спрятался ${where}.`;
+        setTimeout(startQuestPaint, 1600);
       } else {
-        setTimeout(() => b.classList.add("empty"), 300);
+        setTimeout(() => g.classList.add("empty"), 350);
         $("roomHint").textContent = `Смотрим ${where}… ${jokes[(tries - 1) % jokes.length]}`;
       }
-    };
-    scene.appendChild(b);
+    });
   });
   show("room");
+}
+
+// найденный носок выпрыгивает из вещи
+function popSock(scene, g) {
+  const sr = scene.getBoundingClientRect(), gr = g.getBoundingClientRect();
+  const d = document.createElement("div");
+  d.className = "found-sock";
+  d.style.left = (gr.left - sr.left + gr.width / 2) + "px";
+  d.style.top = (gr.top - sr.top + gr.height * 0.4) + "px";
+  d.appendChild(drawSock(target));
+  scene.appendChild(d);
 }
 
 /* ---------- дорисовываем найденный носок ---------- */
 function startQuestPaint() {
   const c = houseCfg(Q.house, quest.apt);
   quest.active = true;
-  target = makeDesign(c.level);
   quest.target = target;
   cfg = { show: c.show ? c.show + Math.min(target.stickers.length, 3) : 0,
           paint: c.paint ? c.paint + target.stickers.length * 4 : 0 };
   const r = Q.apts[quest.apt].rooms[quest.room];
-  $("levelText").textContent = `🏠 ${Q.house} · Кв. ${quest.apt + 1} · ${ROOM_TYPES[r.type].name}`;
-  $("streakText").textContent = `🕵️ ${rankOf(Q.house)}`;
+  $("levelText").textContent = `Дом ${Q.house} · Кв. ${quest.apt + 1} · ${ROOM_TYPES[r.type].name}`;
+  $("streakText").textContent = rankOf(Q.house);
+  $("toMenu").textContent = "← Квартира";
   show("game");
   startRound();
 }
@@ -1031,20 +1044,21 @@ function questResult(win, pct) {
   const pair = $("pair");
   if (win) {
     const pin = document.createElement("div");
-    pin.className = "pin"; pin.textContent = "📎";
+    pin.className = "pin"; pin.innerHTML = I.pin();
     pair.appendChild(pin);
     r.done = true; r.pct = pct;
     closet.push({ a: target, b: mine });
     if (closet.length > 80) closet.shift();
     save("socks-closet", closet);
-    $("msg").textContent = pct === 100 ? "Идеальная пара! 🤩 Жилец в восторге!" : "Пара найдена! 👍 Носок вернулся хозяину.";
-    $("nextBtn").textContent = "Дальше ➜";
+    $("msg").textContent = pct === 100 ? "Идеальная пара! Жилец в восторге!" : "Пара найдена! Носок вернулся хозяину.";
+    $("nextBtn").textContent = "Дальше →";
   } else {
     const t = document.createElement("div");
-    t.className = "sofa"; t.textContent = "😟";
+    t.className = "sofa";
+    t.innerHTML = ART.portrait(a.who, "worried", 70);
     pair.appendChild(t);
     $("msg").textContent = "Не очень похоже… Попробуй ещё раз, инспектор!";
-    $("nextBtn").textContent = "Ещё раз 🔁";
+    $("nextBtn").textContent = "Ещё раз";
   }
   quest.win = win;
   saveQ();
@@ -1061,13 +1075,13 @@ function questNext() {
   stopTimers();
   phase = "idle";
   const a = Q.apts[quest.apt];
-  if (a.rooms.some((r) => !r.done)) { openApt(quest.apt, "Отлично! Остались ещё комнаты 🔎"); return; }
+  if (a.rooms.some((r) => !r.done)) { openApt(quest.apt, "Отлично! Остались ещё комнаты."); return; }
   // квартира проверена
   const avg = a.rooms.reduce((s, r) => s + r.pct, 0) / a.rooms.length;
   a.stars = avg >= 95 ? 3 : avg >= 85 ? 2 : 1;
   saveQ();
   if (Q.apts.some((x) => !x.stars)) {
-    openHouse(`🎉 Квартира ${quest.apt + 1} проверена! ${"⭐".repeat(a.stars)} Осталось квартир: ${Q.apts.filter((x) => !x.stars).length}`);
+    openHouse(`Квартира ${quest.apt + 1} проверена! ${I.stars(a.stars)} Осталось квартир: ${Q.apts.filter((x) => !x.stars).length}`);
     return;
   }
   // весь дом проверен → следующий дом сложнее
@@ -1075,8 +1089,8 @@ function questNext() {
   const done = Q.house;
   Q = newHouse(done + 1, Q.history.concat([got]));
   saveQ();
-  const up = rankOf(Q.house) !== rankOf(done) ? `<br>🎖 Новое звание: <b>${rankOf(Q.house)}</b>!` : "";
-  openStreet(`🏆 Дом №${done} проверен! Звёзд: ${got} ⭐${up}<br>Открыт дом №${Q.house}. Он сложнее:<br>` +
+  const up = rankOf(Q.house) !== rankOf(done) ? `<br>Новое звание: <b>${rankOf(Q.house)}</b>!` : "";
+  openStreet(`<b>Дом №${done} проверен!</b> Звёзд: ${got} ${I.star(18)}${up}<br>Открыт дом №${Q.house}. Он сложнее:<br>` +
     diffLines(Q.house).join("<br>"));
 }
 
@@ -1087,9 +1101,14 @@ $("aptBack").onclick = () => openHouse();
 $("roomBack").onclick = () => openApt(quest.apt);
 $("questReset").onclick = () => {
   if (confirm("Начать квест заново с дома №1? Звёзды и звания пропадут (шкаф останется).")) {
-    Q = newHouse(1, []); saveQ(); openStreet("Начинаем заново! Удачи, стажёр 🕵️");
+    Q = newHouse(1, []); saveQ(); openStreet("Начинаем заново! Удачи, стажёр.");
   }
 };
+
+// рисунки, которые стоят на месте
+$("machine").innerHTML = I.washer();
+$("bubbles").innerHTML = I.bubbles();
+$("entrance").innerHTML = `<svg viewBox="0 0 120 80" width="110"><rect x="30" y="6" width="60" height="74" rx="4" fill="#8d5a34" stroke="#4a3b32" stroke-width="3"/><rect x="38" y="14" width="44" height="26" rx="3" fill="#bfe3f8" stroke="#4a3b32" stroke-width="2"/><circle cx="80" cy="50" r="4" fill="#f5c542"/><rect x="20" y="0" width="80" height="8" rx="3" fill="#6d4426"/></svg>`;
 
 buildTools();
 updateMenu();
