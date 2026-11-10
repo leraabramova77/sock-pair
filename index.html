@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Найди пару</title>
+<meta name="description" content="Игра: у носка потерялась пара. Запомни носок и раскрась второй точно таким же!">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧦</text></svg>">
+<style>
+  :root {
+    --bg: #fff6e9;
+    --bg2: #ffe3c4;
+    --text: #3b2a20;
+    --card: #ffffff;
+    --accent: #ff7a59;
+    --accent2: #4d9de0;
+    --good: #3fae5a;
+    --bad: #e25555;
+    --line: #3b2a20;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body {
+    font-family: "Trebuchet MS", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--text);
+    background: radial-gradient(circle at 20% 10%, var(--bg) 0, var(--bg2) 100%);
+    background-color: var(--bg);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .screen { display: none; min-height: 100vh; padding: 16px; }
+  .screen.on { display: flex; flex-direction: column; align-items: center; }
+
+  /* ---------- меню ---------- */
+  #menu { justify-content: center; gap: 14px; text-align: center; }
+  #menu h1 { font-size: clamp(38px, 9vw, 64px); margin: 0; letter-spacing: 1px; }
+  #menu h1 span { display: inline-block; animation: wiggle 2.4s ease-in-out infinite; }
+  @keyframes wiggle { 0%,100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
+  #menu p { margin: 0; max-width: 460px; font-size: 17px; line-height: 1.45; }
+  .menu-socks { display: flex; gap: 10px; justify-content: center; margin: 6px 0; }
+  .menu-socks svg { width: 80px; height: 120px; }
+  .menu-socks svg:last-child { transform: scaleX(-1) rotate(8deg); }
+  .menu-socks svg:first-child { transform: rotate(-8deg); }
+  .big {
+    display: block; width: min(340px, 100%); padding: 14px 18px; border: 0; border-radius: 18px;
+    font-size: 20px; font-weight: bold; background: var(--card);
+    box-shadow: 0 5px 0 rgba(0,0,0,.15); transition: transform .1s;
+  }
+  .big:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,.15); }
+  .big small { display: block; font-weight: normal; font-size: 14px; opacity: .7; margin-top: 2px; }
+  .big.memory { background: #ffd166; }
+  .big.speed { background: #8bd3f7; }
+  .row { display: flex; gap: 10px; width: min(340px, 100%); }
+  .row .big { font-size: 16px; padding: 12px 8px; }
+  .record { font-size: 15px; opacity: .75; }
+
+  /* ---------- игра ---------- */
+  .topbar {
+    width: min(760px, 100%); display: flex; align-items: center; gap: 10px; justify-content: space-between;
+    font-size: 16px;
+  }
+  .topbar .pill { background: var(--card); padding: 6px 12px; border-radius: 999px; box-shadow: 0 2px 0 rgba(0,0,0,.1); }
+  .topbar .back { border: 0; background: var(--card); border-radius: 999px; padding: 6px 12px; box-shadow: 0 2px 0 rgba(0,0,0,.1); }
+  .hint { margin: 10px 0 4px; font-size: 19px; font-weight: bold; text-align: center; min-height: 1.4em; }
+  .timer { width: min(760px, 100%); height: 10px; background: rgba(0,0,0,.08); border-radius: 99px; overflow: hidden; }
+  .timer i { display: block; height: 100%; width: 100%; background: var(--accent); border-radius: 99px; }
+
+  .stage {
+    width: min(760px, 100%); display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px;
+  }
+  .slot {
+    position: relative; background: rgba(255,255,255,.55); border-radius: 22px; padding: 10px;
+    display: flex; flex-direction: column; align-items: center; min-height: 300px;
+  }
+  .slot .label { font-size: 14px; opacity: .7; margin-bottom: 4px; }
+  .slot svg.sock { width: 100%; max-width: 230px; height: auto; touch-action: manipulation; }
+  #mySock { cursor: pointer; }
+  .machine {
+    width: 64px; height: 64px; border-radius: 14px; background: #e9eef2; border: 3px solid #b7c3cc;
+    display: grid; place-items: center; position: absolute; top: 10px; right: 10px;
+  }
+  .machine::before {
+    content: ""; width: 38px; height: 38px; border-radius: 50%; border: 4px solid #9fb0bc;
+    background: radial-gradient(circle at 35% 35%, #d8f1ff, #7fb6d6);
+  }
+  .machine.spin::before { animation: spin .6s linear infinite; background: conic-gradient(#d8f1ff, #7fb6d6, #d8f1ff); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .drop-in { animation: dropIn .7s cubic-bezier(.3,1.4,.5,1); }
+  @keyframes dropIn { from { transform: translate(30px, -60px) scale(.3) rotate(40deg); opacity: 0; } }
+  .fly-away { animation: flyAway .6s ease-in forwards; }
+  @keyframes flyAway { to { transform: translate(40px, -80px) scale(.2) rotate(-40deg); opacity: 0; } }
+  .secret {
+    position: absolute; inset: 60px 14px 14px; display: none; place-items: center; text-align: center;
+    font-size: 18px; line-height: 1.4; border: 3px dashed rgba(0,0,0,.15); border-radius: 18px;
+  }
+  .secret b { font-size: 46px; display: block; }
+  .slot.hidden .secret { display: grid; }
+  .slot.hidden svg.sock { visibility: hidden; }
+
+  /* инструменты */
+  .tools {
+    width: min(760px, 100%); background: var(--card); border-radius: 20px; padding: 10px;
+    margin-top: 12px; box-shadow: 0 4px 0 rgba(0,0,0,.08);
+  }
+  .tools.off { opacity: .45; pointer-events: none; }
+  .tool-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; }
+  .tool-row + .tool-row { margin-top: 8px; }
+  .tool {
+    border: 2px solid transparent; background: #f4efe8; border-radius: 14px; padding: 6px 10px;
+    font-size: 15px; display: flex; align-items: center; gap: 4px; min-height: 44px;
+  }
+  .tool svg { width: 26px; height: 26px; }
+  .tool.on { border-color: var(--line); background: #fff0d6; }
+  .color {
+    width: 38px; height: 38px; border-radius: 50%; border: 3px solid #fff;
+    box-shadow: 0 0 0 2px rgba(0,0,0,.15); padding: 0;
+  }
+  .color.on { box-shadow: 0 0 0 3px var(--line); transform: scale(1.12); }
+  .actions { display: flex; gap: 10px; justify-content: center; margin-top: 12px; width: min(760px, 100%); }
+  .actions .big { width: auto; flex: 1; max-width: 260px; font-size: 18px; }
+  .done { background: var(--good) !important; color: #fff; }
+  .big:disabled { opacity: .45; cursor: default; }
+
+  /* результат */
+  .result {
+    position: fixed; inset: 0; background: rgba(40,25,15,.45); display: none; place-items: center; z-index: 20;
+    padding: 16px;
+  }
+  .result.on { display: grid; }
+  .result .box {
+    background: var(--card); border-radius: 26px; padding: 20px; width: min(420px, 100%); text-align: center;
+    animation: pop .35s cubic-bezier(.3,1.5,.5,1);
+  }
+  @keyframes pop { from { transform: scale(.6); opacity: 0; } }
+  .result .pct { font-size: 64px; font-weight: bold; line-height: 1; }
+  .result .msg { font-size: 20px; margin: 8px 0 12px; }
+  .pair { display: flex; justify-content: center; align-items: flex-end; gap: 0; height: 170px; position: relative; }
+  .pair svg { width: 110px; height: 165px; }
+  .pair .pin { position: absolute; top: 4px; font-size: 34px; }
+  .pair.win svg:first-child { animation: hugL .6s ease forwards; }
+  .pair.win svg:last-child { animation: hugR .6s ease forwards; }
+  @keyframes hugL { to { transform: translateX(18px) rotate(-4deg); } }
+  @keyframes hugR { to { transform: translateX(-18px) rotate(4deg); } }
+  .pair.lose svg:last-child { animation: crawl 1.4s ease-in .4s forwards; }
+  @keyframes crawl { 50% { transform: translate(20px, 10px) rotate(25deg); } 100% { transform: translate(80px, 60px) rotate(80deg) scale(.5); opacity: 0; } }
+  .sofa { font-size: 40px; position: absolute; right: 0; bottom: -6px; }
+
+  /* шкаф */
+  #closet h2 { margin: 8px 0; }
+  .shelf {
+    width: min(760px, 100%); display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px;
+    background: #c99a6b; padding: 12px; border-radius: 18px; box-shadow: inset 0 0 0 6px #a87b4f;
+  }
+  .shelf .p { background: #f5e6d3; border-radius: 12px; display: flex; justify-content: center; padding: 6px 2px; }
+  .shelf svg { width: 50px; height: 75px; }
+  .shelf svg:last-child { margin-left: -14px; }
+  .empty { padding: 30px; text-align: center; opacity: .8; grid-column: 1 / -1; color: #fff; font-size: 18px; }
+
+  @media (max-width: 520px) {
+    .slot { min-height: 230px; padding: 6px; }
+    .machine { width: 40px; height: 40px; top: 4px; right: 4px; }
+    #targetSlot .label { padding-right: 40px; font-size: 12px; }
+    .slot .label { font-size: 12px; }
+    .machine::before { width: 24px; height: 24px; border-width: 3px; }
+    .secret { inset: 52px 6px 6px; font-size: 15px; }
+    .color { width: 34px; height: 34px; }
+    .tool { padding: 4px 8px; font-size: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ======== МЕНЮ ======== -->
+<section class="screen on" id="menu">
+  <h1><span>🧦</span> Найди пару</h1>
+  <div class="menu-socks" id="menuSocks"></div>
+  <p>Из стиральной машинки выпал носок, а его пара потерялась! Запомни носок и раскрась второй <b>точно таким же</b>.</p>
+  <button class="big memory" data-mode="memory">🧠 По памяти<small>Носок покажется и спрячется</small></button>
+  <button class="big speed" data-mode="speed">⚡ На скорость<small>Носок видно, но время бежит</small></button>
+  <div class="row">
+    <button class="big" id="openCloset">👕 Шкаф <span id="closetCount">0</span></button>
+    <button class="big" id="openSofa">🛋 Под диваном <span id="sofaCount">0</span></button>
+  </div>
+  <div class="record" id="recordText"></div>
+</section>
+
+<!-- ======== ИГРА ======== -->
+<section class="screen" id="game">
+  <div class="topbar">
+    <button class="back" id="toMenu">← Меню</button>
+    <span class="pill" id="levelText">Носок №1</span>
+    <span class="pill" id="streakText">🔥 0</span>
+  </div>
+  <div class="hint" id="hint"></div>
+  <div class="timer"><i id="timerBar"></i></div>
+
+  <div class="stage">
+    <div class="slot" id="targetSlot">
+      <div class="label">Потерянный носок</div>
+      <div class="machine" id="machine"></div>
+      <div id="targetBox"></div>
+      <div class="secret"><div><b>🫧</b>Носок спрятался в машинку.<br>Вспоминай, какой он!</div></div>
+    </div>
+    <div class="slot">
+      <div class="label">Твой носок</div>
+      <div id="myBox"></div>
+    </div>
+  </div>
+
+  <div class="tools off" id="tools">
+    <div class="tool-row" id="toolRow"></div>
+    <div class="tool-row" id="palette"></div>
+  </div>
+  <div class="actions">
+    <button class="big" id="clearBtn">🧼 Очистить</button>
+    <button class="big done" id="doneBtn">✅ Готово!</button>
+  </div>
+</section>
+
+<!-- ======== ШКАФ ======== -->
+<section class="screen" id="closet">
+  <div class="topbar"><button class="back" id="closetBack">← Меню</button><span class="pill" id="closetTitle"></span><span></span></div>
+  <h2>👕 Шкаф с парами</h2>
+  <div class="shelf" id="shelf"></div>
+</section>
+
+<!-- ======== РЕЗУЛЬТАТ ======== -->
+<div class="result" id="result">
+  <div class="box">
+    <div class="pct" id="pct">0%</div>
+    <div class="msg" id="msg"></div>
+    <div class="pair" id="pair"></div>
+    <div class="actions"><button class="big done" id="nextBtn">Дальше ➜</button></div>
+  </div>
+</div>
+
+<script>
+/* ================== Краски и наклейки ================== */
+const COLORS = [
+  ["#e53935", "красный"], ["#fb8c00", "оранжевый"], ["#fdd835", "жёлтый"], ["#43a047", "зелёный"],
+  ["#4fc3f7", "голубой"], ["#1e4fb4", "синий"], ["#8e24aa", "фиолетовый"], ["#f48fb1", "розовый"],
+  ["#8d6e63", "коричневый"], ["#263238", "чёрный"],
+];
+const BLANK = "#fbfaf7";
+const STICKERS = {
+  heart:  { name: "сердце",   d: "M0 8 C -13 -1 -11 -12 -4.5 -12 C -1.5 -12 0 -9.5 0 -8 C 0 -9.5 1.5 -12 4.5 -12 C 11 -12 13 -1 0 8 Z" },
+  star:   { name: "звезда",   d: starPath(12, 5) },
+  dot:    { name: "горошек",  d: "M -7 0 A 7 7 0 1 0 7 0 A 7 7 0 1 0 -7 0 Z" },
+  flower: { name: "цветок",   d: flowerPath() },
+};
+function starPath(R, r) {
+  let p = "";
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + i * Math.PI / 5, rad = i % 2 ? r : R;
+    p += (i ? "L" : "M") + (Math.cos(a) * rad).toFixed(2) + " " + (Math.sin(a) * rad).toFixed(2) + " ";
+  }
+  return p + "Z";
+}
+function flowerPath() {
+  let p = "";
+  for (let i = 0; i < 5; i++) {
+    const a = -Math.PI / 2 + i * 2 * Math.PI / 5, x = Math.cos(a) * 6.5, y = Math.sin(a) * 6.5;
+    p += `M ${(x - 5).toFixed(2)} ${y.toFixed(2)} A 5 5 0 1 0 ${(x + 5).toFixed(2)} ${y.toFixed(2)} A 5 5 0 1 0 ${(x - 5).toFixed(2)} ${y.toFixed(2)} Z `;
+  }
+  return p;
+}
+
+/* ================== Рисуем носок ================== */
+const NS = "http://www.w3.org/2000/svg";
+const OUTLINE = "M48 18 H132 V168 C132 184 142 194 158 199 L176 205 C201 214 204 268 180 281 C162 291 118 290 88 285 C58 280 42 256 45 226 Z";
+const ZONES = {
+  leg:     { name: "носок",   draw: (g) => el(g, "path", { d: OUTLINE }) },
+  stripe1: { name: "полоска", draw: (g) => el(g, "rect", { x: 30, y: 78, width: 120, height: 18 }) },
+  stripe2: { name: "полоска", draw: (g) => el(g, "rect", { x: 30, y: 116, width: 120, height: 18 }) },
+  cuff:    { name: "резинка", draw: (g) => el(g, "rect", { x: 30, y: 10, width: 120, height: 42 }) },
+  heel:    { name: "пятка",   draw: (g) => el(g, "path", { d: "M30 228 C 44 222, 80 226, 94 246 C 104 262, 98 284, 90 300 L 30 300 Z" }) },
+  toe:     { name: "мысок",   draw: (g) => el(g, "path", { d: "M160 190 C 148 214, 146 262, 160 296 L 220 296 L 220 190 Z" }) },
+};
+const ZONE_ORDER = ["leg", "stripe1", "stripe2", "cuff", "heel", "toe"];
+let clipN = 0;
+
+function el(parent, tag, attrs = {}) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  parent.appendChild(e);
+  return e;
+}
+
+// design = { zones: {leg:"#..", cuff:"#..", ...}, stickers: [{type, x, y, color}] }
+function drawSock(design, opts = {}) {
+  const id = "c" + (++clipN);
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 210 300");
+  svg.setAttribute("class", "sock");
+  const defs = el(svg, "defs");
+  el(el(defs, "clipPath", { id }), "path", { d: OUTLINE });
+
+  el(svg, "path", { d: OUTLINE, transform: "translate(4 5)", fill: "rgba(0,0,0,.12)" }); // тень
+  const body = el(svg, "g", { "clip-path": `url(#${id})` });
+  for (const z of ZONE_ORDER) {
+    if (!(z in design.zones)) continue;
+    const shape = ZONES[z].draw(body);
+    shape.setAttribute("fill", design.zones[z] || BLANK);
+    shape.setAttribute("stroke", "rgba(0,0,0,.25)");
+    shape.setAttribute("stroke-width", "1.5");
+    shape.dataset.zone = z;
+  }
+  // рубчики на резинке и вязаная текстура
+  const rib = el(body, "g", { stroke: "rgba(0,0,0,.13)", "stroke-width": "2", "pointer-events": "none" });
+  for (let x = 56; x < 132; x += 9) el(rib, "line", { x1: x, y1: 18, x2: x, y2: 52 });
+  const knit = el(body, "g", { stroke: "rgba(255,255,255,.18)", "stroke-width": "1", fill: "none", "pointer-events": "none" });
+  for (let y = 62; y < 290; y += 10) el(knit, "path", { d: `M20 ${y} q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0 q 5 4 10 0` });
+
+  const st = el(body, "g");
+  design.stickers.forEach((s, i) => {
+    const p = el(st, "path", {
+      d: STICKERS[s.type].d, fill: s.color, stroke: "rgba(0,0,0,.35)", "stroke-width": "1.3",
+      transform: `translate(${s.x} ${s.y}) scale(1.15)`,
+    });
+    p.dataset.sticker = i;
+  });
+  el(svg, "path", { d: OUTLINE, fill: "none", stroke: "#3b2a20", "stroke-width": "3", "stroke-linejoin": "round", "pointer-events": "none" });
+  if (opts.flip) svg.style.transform = "scaleX(-1)";
+  return svg;
+}
+
+/* ================== Придумываем носок для уровня ================== */
+const STICKER_SLOTS = [[72, 66], [108, 66], [90, 106], [66, 148], [112, 150], [90, 186], [118, 238], [150, 250], [86, 254], [64, 104]];
+const rnd = (n) => Math.floor(Math.random() * n);
+const pick = (arr) => arr[rnd(arr.length)];
+const colorsExcept = (...not) => COLORS.map((c) => c[0]).filter((c) => !not.includes(c));
+
+function makeDesign(level) {
+  const leg = pick(colorsExcept());
+  const zones = { leg };
+  if (level <= 1) {
+    const c = pick(colorsExcept(leg));
+    zones.cuff = zones.heel = zones.toe = c;
+  } else {
+    zones.cuff = pick(colorsExcept(leg));
+    zones.heel = pick(colorsExcept(leg));
+    zones.toe = level <= 2 ? zones.heel : pick(colorsExcept(leg));
+  }
+  if (level >= 3) {
+    zones.stripe1 = pick(colorsExcept(leg));
+    zones.stripe2 = level >= 5 ? pick(colorsExcept(leg)) : zones.stripe1;
+  }
+  const stickers = [];
+  const count = level < 4 ? 0 : Math.min(1 + Math.floor((level - 4) / 2), 5);
+  const slots = STICKER_SLOTS.slice().sort(() => Math.random() - 0.5);
+  const types = Object.keys(STICKERS);
+  for (let i = 0; i < count; i++) {
+    const [x, y] = slots[i];
+    const under = (zones.stripe1 && y > 70 && y < 140) ? [zones.stripe1, zones.stripe2] : [];
+    stickers.push({ type: pick(types), x, y, color: pick(colorsExcept(leg, ...under)) });
+  }
+  return { zones, stickers };
+}
+
+function blankLike(design) {
+  const zones = {};
+  for (const z in design.zones) zones[z] = null;
+  return { zones, stickers: [] };
+}
+
+/* ================== Сравниваем два носка ================== */
+function compare(target, mine) {
+  let got = 0, max = 0;
+  for (const z in target.zones) { max++; if (mine.zones[z] === target.zones[z]) got++; }
+  const used = new Set();
+  for (const t of target.stickers) {
+    max += 2;
+    let best = -1, bestD = 34;
+    mine.stickers.forEach((m, i) => {
+      if (used.has(i) || m.type !== t.type) return;
+      const d = Math.hypot(m.x - t.x, m.y - t.y);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    if (best >= 0) {
+      used.add(best);
+      got += 1;
+      if (mine.stickers[best].color === t.color) got += 1;
+    }
+  }
+  max += mine.stickers.length - used.size; // лишние наклейки
+  return Math.round(100 * got / Math.max(max, 1));
+}
+
+/* ================== Сохранения ================== */
+function load(key, def) {
+  try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; } catch (e) { return def; }
+}
+function save(key, v) { try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {} }
+let closet = load("socks-closet", []);
+let sofa = load("socks-sofa", []);
+let record = load("socks-record", 0);
+
+/* ================== Игра ================== */
+const $ = (id) => document.getElementById(id);
+const PASS = 70;
+let mode = "memory", level = 1, streak = 0, rescue = false;
+let target, mine, phase = "idle", tool = "fill", color = COLORS[0][0];
+let timer = null, timerEnd = 0, timerTotal = 0, phaseTimeout = null;
+
+function show(screen) {
+  document.querySelectorAll(".screen").forEach((s) => s.classList.toggle("on", s.id === screen));
+  window.scrollTo(0, 0);
+}
+
+function updateMenu() {
+  $("closetCount").textContent = closet.length;
+  $("sofaCount").textContent = sofa.length;
+  $("openSofa").disabled = !sofa.length;
+  $("openSofa").style.opacity = sofa.length ? 1 : .5;
+  $("recordText").textContent = record ? `🏆 Рекорд: ${record} ${plural(record, "пара", "пары", "пар")} подряд` : "";
+  const box = $("menuSocks");
+  box.innerHTML = "";
+  const d = makeDesign(5);
+  box.append(drawSock(d), drawSock(d));
+}
+function plural(n, one, few, many) {
+  const a = n % 10, b = n % 100;
+  if (a === 1 && b !== 11) return one;
+  if (a >= 2 && a <= 4 && (b < 10 || b >= 20)) return few;
+  return many;
+}
+
+function startGame(m, fromSofa) {
+  mode = m; rescue = !!fromSofa; level = 1; streak = 0;
+  show("game");
+  nextSock();
+}
+
+function stopTimers() {
+  clearInterval(timer); timer = null;
+  clearTimeout(phaseTimeout); phaseTimeout = null;
+}
+
+function runTimer(seconds, onEnd) {
+  stopTimers();
+  timerTotal = seconds * 1000;
+  timerEnd = Date.now() + timerTotal;
+  const bar = $("timerBar");
+  const tick = () => {
+    const left = Math.max(0, timerEnd - Date.now());
+    bar.style.width = (100 * left / timerTotal) + "%";
+    bar.style.background = left < 4000 ? "var(--bad)" : "var(--accent)";
+    if (mode === "memory" && phase === "show") $("hint").textContent = `👀 Запоминай! ${Math.ceil(left / 1000)}`;
+    if (mode === "speed" && phase === "paint") $("hint").textContent = `⚡ Раскрашивай! Осталось ${Math.ceil(left / 1000)} сек`;
+    if (left <= 0) { stopTimers(); onEnd(); }
+  };
+  tick();
+  timer = setInterval(tick, 100);
+}
+
+function nextSock() {
+  stopTimers();
+  if (rescue) {
+    if (!sofa.length) { goMenu(); return; }
+    target = sofa[sofa.length - 1];
+  } else {
+    target = makeDesign(level);
+  }
+  mine = blankLike(target);
+  $("levelText").textContent = rescue ? `🛋 Спасаем носок` : `Носок №${level}`;
+  $("streakText").textContent = `🔥 ${streak}`;
+  $("targetSlot").classList.remove("hidden");
+  drawTarget(true);
+  drawMine();
+  setToolsOn(false);
+  phase = "drop";
+  $("hint").textContent = "🌀 Машинка стирает…";
+  $("timerBar").style.width = "100%";
+  $("machine").classList.add("spin");
+  phaseTimeout = setTimeout(() => {
+    $("machine").classList.remove("spin");
+    if (mode === "memory") {
+      phase = "show";
+      const sec = Math.max(3, 7 - Math.floor(level / 2)) + Math.min(target.stickers.length, 3);
+      runTimer(sec, hideTarget);
+    } else {
+      phase = "paint";
+      setToolsOn(true);
+      const sec = Math.max(18, 40 - level * 2) + target.stickers.length * 4;
+      runTimer(sec, finish);
+    }
+  }, 900);
+}
+
+function hideTarget() {
+  const svg = $("targetBox").querySelector("svg");
+  svg.classList.add("fly-away");
+  phaseTimeout = setTimeout(() => {
+    $("targetSlot").classList.add("hidden");
+    svg.classList.remove("fly-away");
+    phase = "paint";
+    $("hint").textContent = "🎨 Раскрась свой носок так же!";
+    $("timerBar").style.width = "0%";
+    setToolsOn(true);
+  }, 550);
+}
+
+function drawTarget(animate) {
+  const box = $("targetBox");
+  box.innerHTML = "";
+  const svg = drawSock(target);
+  if (animate) svg.classList.add("drop-in");
+  box.appendChild(svg);
+}
+
+function drawMine() {
+  const box = $("myBox");
+  box.innerHTML = "";
+  const svg = drawSock(mine);
+  svg.id = "mySock";
+  svg.addEventListener("pointerdown", onPaint);
+  box.appendChild(svg);
+}
+
+function setToolsOn(on) {
+  $("tools").classList.toggle("off", !on);
+  $("doneBtn").disabled = !on;
+  $("clearBtn").disabled = !on;
+}
+
+function svgPoint(svg, e) {
+  const pt = svg.createSVGPoint();
+  pt.x = e.clientX; pt.y = e.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+function onPaint(e) {
+  if (phase !== "paint") return;
+  e.preventDefault();
+  const svg = e.currentTarget;
+  const hit = e.target;
+  const si = hit.dataset.sticker;
+  if (tool === "erase") {
+    if (si !== undefined) { mine.stickers.splice(+si, 1); drawMine(); }
+    return;
+  }
+  if (tool === "fill") {
+    if (si !== undefined) mine.stickers[+si].color = color;
+    else if (hit.dataset.zone) mine.zones[hit.dataset.zone] = color;
+    else return;
+    drawMine();
+    return;
+  }
+  // наклейка
+  if (!hit.dataset.zone && si === undefined) return; // мимо носка
+  const p = svgPoint(svg, e);
+  const x = Math.round(p.x), y = Math.round(p.y);
+  if (mine.stickers.length >= 8) { $("hint").textContent = "Хватит наклеек! Можно стереть лишние 🧽"; return; }
+  mine.stickers.push({ type: tool, x, y, color });
+  drawMine();
+}
+
+// инструменты
+function buildTools() {
+  const row = $("toolRow");
+  const tools = [["fill", "🪣 Заливка"], ...Object.keys(STICKERS).map((k) => [k, ""]), ["erase", "🧽 Стёрка"]];
+  for (const [key, label] of tools) {
+    const b = document.createElement("button");
+    b.className = "tool" + (key === tool ? " on" : "");
+    b.dataset.tool = key;
+    b.title = STICKERS[key] ? "Наклейка: " + STICKERS[key].name : label;
+    if (STICKERS[key]) {
+      const s = document.createElementNS(NS, "svg");
+      s.setAttribute("viewBox", "-14 -14 28 28");
+      el(s, "path", { d: STICKERS[key].d, fill: "currentColor", stroke: "rgba(0,0,0,.3)", "stroke-width": "1.2" });
+      b.appendChild(s);
+    } else {
+      b.textContent = label;
+    }
+    b.onclick = () => { tool = key; row.querySelectorAll(".tool").forEach((x) => x.classList.toggle("on", x === b)); };
+    row.appendChild(b);
+  }
+  const pal = $("palette");
+  for (const [c, name] of COLORS) {
+    const b = document.createElement("button");
+    b.className = "color" + (c === color ? " on" : "");
+    b.style.background = c;
+    b.title = name;
+    b.onclick = () => {
+      color = c;
+      pal.querySelectorAll(".color").forEach((x) => x.classList.toggle("on", x === b));
+      row.querySelectorAll(".tool svg").forEach((s) => (s.style.color = c));
+      if (tool === "erase") $("toolRow").querySelector('[data-tool="fill"]').click();
+    };
+    pal.appendChild(b);
+  }
+  row.querySelectorAll(".tool svg").forEach((s) => (s.style.color = color));
+}
+
+function finish() {
+  if (phase !== "paint") return;
+  stopTimers();
+  phase = "result";
+  setToolsOn(false);
+  $("targetSlot").classList.remove("hidden");
+  drawTarget(false);
+  const pct = compare(target, mine);
+  const win = pct >= PASS;
+  $("hint").textContent = "🔍 Сравниваем носки…";
+  $("timerBar").style.width = "0%";
+  $("pct").textContent = pct + "%";
+  $("pct").style.color = win ? "var(--good)" : "var(--bad)";
+  const pair = $("pair");
+  pair.innerHTML = "";
+  pair.className = "pair " + (win ? "win" : "lose");
+  pair.append(drawSock(target), drawSock(mine, { flip: true }));
+
+  if (win) {
+    const pin = document.createElement("div");
+    pin.className = "pin"; pin.textContent = "📎";
+    pair.appendChild(pin);
+    closet.push({ a: target, b: mine });
+    if (closet.length > 80) closet.shift();
+    if (rescue) sofa.pop();
+    streak++;
+    if (!rescue) level++;
+    if (streak > record) record = streak;
+    $("msg").textContent = pct === 100 ? "Идеальная пара! 🤩 В шкаф!" : pct >= 90 ? "Почти близнецы! 👕 В шкаф!" : "Похожи! Пара отправляется в шкаф 👕";
+  } else {
+    const sofaEl = document.createElement("div");
+    sofaEl.className = "sofa"; sofaEl.textContent = "🛋";
+    pair.appendChild(sofaEl);
+    if (!rescue) { sofa.push(target); if (sofa.length > 30) sofa.shift(); }
+    streak = 0;
+    $("msg").textContent = rescue ? "Не получилось… Носок пока остался под диваном 🛋" : "Не похоже… Носок обиделся и уполз под диван 🛋";
+  }
+  save("socks-closet", closet); save("socks-sofa", sofa); save("socks-record", record);
+  $("nextBtn").textContent = rescue && !sofa.length ? "Все спасены! 🎉" : "Дальше ➜";
+  $("result").classList.add("on");
+}
+
+function goMenu() {
+  stopTimers();
+  phase = "idle";
+  $("result").classList.remove("on");
+  updateMenu();
+  show("menu");
+}
+
+function openCloset() {
+  const shelf = $("shelf");
+  shelf.innerHTML = "";
+  $("closetTitle").textContent = `${closet.length} ${plural(closet.length, "пара", "пары", "пар")}`;
+  if (!closet.length) shelf.innerHTML = '<div class="empty">Тут пока пусто. Найди первую пару! 🧦</div>';
+  for (const p of closet.slice().reverse()) {
+    const d = document.createElement("div");
+    d.className = "p";
+    d.append(drawSock(p.a), drawSock(p.b, { flip: true }));
+    shelf.appendChild(d);
+  }
+  show("closet");
+}
+
+/* ================== Кнопки ================== */
+document.querySelectorAll("[data-mode]").forEach((b) => (b.onclick = () => startGame(b.dataset.mode, false)));
+$("openSofa").onclick = () => { if (sofa.length) startGame(mode, true); };
+$("openCloset").onclick = openCloset;
+$("closetBack").onclick = goMenu;
+$("toMenu").onclick = goMenu;
+$("doneBtn").onclick = finish;
+$("clearBtn").onclick = () => { if (phase === "paint") { mine = blankLike(target); drawMine(); } };
+$("nextBtn").onclick = () => {
+  $("result").classList.remove("on");
+  if (rescue && !sofa.length) { goMenu(); return; }
+  nextSock();
+};
+
+buildTools();
+updateMenu();
+</script>
+</body>
+</html>
